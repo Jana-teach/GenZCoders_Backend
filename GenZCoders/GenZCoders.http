@@ -1,0 +1,6 @@
+@GenZCoders_HostAddress = http://localhost:5109
+
+GET {{GenZCoders_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
