@@ -1,7 +1,7 @@
 using GenZCoders.DTOs.CourseMaterialDto;
 using GenZCoders.DTOs.WeekDto;
 using GenZCoders.Models;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
 using GenZCoders.Repos.CourseMaterialRepo;
 using GenZCoders.Services.Zoom;
 

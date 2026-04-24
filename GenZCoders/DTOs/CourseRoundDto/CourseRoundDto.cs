@@ -4,13 +4,13 @@
     {
         public long Id { get; set; }
         public long? CourseId { get; set; }
-        public decimal RoundNumber { get; set; }
+        public decimal? RoundNumber { get; set; }
         public long InstructorId { get; set; }
         public string? InstructorName { get; set; }
 
 
-        public DateOnly? StartDate { get; set; }
-        public DateOnly? EndDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public long? CourseRoundGroupId { get; set; }
 
         public long? MinStudents { get; set; }

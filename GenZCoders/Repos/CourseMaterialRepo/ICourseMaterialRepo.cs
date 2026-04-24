@@ -1,4 +1,4 @@
-﻿using GenZCoders.Models.GenZCoders.Models;
+﻿using GenZCoders.Models;
 
 namespace GenZCoders.Repos.CourseMaterialRepo
 {

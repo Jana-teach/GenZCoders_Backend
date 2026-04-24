@@ -1,5 +1,6 @@
 using GenZCoders.DTOs.CourseMaterialDto;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
+using GenZCoders.Models;
 using GenZCoders.Services.CourseMaterialService;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

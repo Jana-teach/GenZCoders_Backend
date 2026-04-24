@@ -3,11 +3,11 @@ namespace GenZCoders.DTOs.CourseRoundDto
     public class CourseRoundDetailsDto
     {
         public long Id { get; set; }
-        public decimal RoundNumber { get; set; }
+        public decimal? RoundNumber { get; set; }
         public string CourseName { get; set; } = null!;
         public long? CourseId { get; set; }
-        public DateOnly? StartDate { get; set; }
-        public DateOnly? EndDate { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
         public decimal? Price { get; set; }
         public long? CourseRoundGroupId { get; set; }
         public long? MinStudents { get; set; }

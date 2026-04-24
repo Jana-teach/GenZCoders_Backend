@@ -1,4 +1,4 @@
-﻿using GenZCoders.Models.GenZCoders.Models;
+﻿using GenZCoders.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;

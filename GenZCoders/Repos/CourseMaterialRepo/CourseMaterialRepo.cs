@@ -1,5 +1,5 @@
 ﻿using GenZCoders.Models;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GenZCoders.Repos.CourseMaterialRepo

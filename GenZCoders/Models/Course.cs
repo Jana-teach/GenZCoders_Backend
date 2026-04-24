@@ -11,10 +11,15 @@ public partial class Course
 
     public string Description { get; set; } = null!;
 
-    public long LevelStatusId { get; set; }
+    public long? LevelStatusId { get; set; }
 
-    public long DurationHours { get; set; }
-    public virtual Status LevelStatus { get; set; }
+    public long? DurationHours { get; set; }
+
+    public string? BusinessEntity { get; set; }
+
+    public long? GradeID { get; set; }
+
+    public virtual Status? LevelStatus { get; set; }
 
     public virtual ICollection<CourseRound> CourseRounds { get; set; } = new List<CourseRound>();
 }

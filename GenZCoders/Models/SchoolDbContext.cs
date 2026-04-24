@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GenZCoders.Models;
@@ -1245,6 +1245,29 @@ public partial class SchoolDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // In OnModelCreating or a separate IEntityTypeConfiguration<ExamQuestionBank>
+        modelBuilder.Entity<ExamQuestionBank>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd();
+
+            entity.Property(e => e.ExamId)
+                .HasColumnName("Exam_ID");
+
+            entity.Property(e => e.QuestionId)
+                .HasColumnName("Question_ID");
+
+            entity.Property(e => e.CourseRoundId)
+                .HasColumnName("CourseRound_ID");
+
+            // Foreign key to CourseRound
+            entity.HasOne(e => e.CourseRound)
+                .WithMany(cr => cr.ExamQuestionBanks)  // You'll need to add this collection to CourseRound
+                .HasForeignKey(e => e.CourseRoundId)
+                .OnDelete(DeleteBehavior.SetNull);  // or Restrict/NoAction depending on your needs
+        });
 
         OnModelCreatingPartial(modelBuilder);
     }

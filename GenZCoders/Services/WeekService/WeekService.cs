@@ -1,6 +1,6 @@
 ﻿using GenZCoders.DTOs.WeekDto;
 using GenZCoders.Models;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
 using GenZCoders.Repos.WeekRepo;
 using Microsoft.EntityFrameworkCore;
 using System;

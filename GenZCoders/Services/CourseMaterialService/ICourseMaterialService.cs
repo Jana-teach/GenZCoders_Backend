@@ -1,5 +1,5 @@
 using GenZCoders.DTOs.CourseMaterialDto;
-using GenZCoders.Models.GenZCoders.Models;
+using GenZCoders.Models;
 
 namespace GenZCoders.Services.CourseMaterialService
 {
