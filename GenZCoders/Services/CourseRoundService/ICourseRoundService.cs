@@ -1,4 +1,5 @@
 ﻿using GenZCoders.DTOs.CourseRoundDto;
+using GenZCoders.DTOs.ExamsDto;
 
 namespace GenZCoders.Services.CourseRoundService
 {
@@ -10,6 +11,9 @@ namespace GenZCoders.Services.CourseRoundService
         Task<bool> UpdateAsync(long id, UpdateCourseRoundDto dto);
         Task<bool> PatchAsync(long id, PatchCourseRoundDto dto);
         Task<bool> DeleteAsync(long id);
-    }
 
+        // NEW: Separate endpoint to manage exam questions
+        Task<bool> AddExamQuestionsAsync(long courseRoundId, List<CreateExamQuestionDto> questions);
+        Task<bool> RemoveExamQuestionsAsync(long courseRoundId, List<long> questionIds);
+    }
 }

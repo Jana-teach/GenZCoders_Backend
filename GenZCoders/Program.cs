@@ -8,6 +8,7 @@ using GenZCoders.Repos.CourseRepo;
 using GenZCoders.Repos.CourseRoundInstructorRepo;
 using GenZCoders.Repos.CourseRoundRepo;
 using GenZCoders.Repos.EngineerDashboardRepo;
+using GenZCoders.Repos.ExamRepo;
 using GenZCoders.Repos.LoginRepo;
 using GenZCoders.Repos.MediaRepo;
 using GenZCoders.Repos.StudentExtensionRepo;
@@ -83,6 +84,9 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IEngineerDashboardRepo, EngineerDashBoardRepo>();
 builder.Services.AddScoped<IEngineerDashboardService, EngineerDashboardService>();
 builder.Services.AddHttpClient<IZoomService, ZoomService>();
+builder.Services.AddScoped<IExamQuestionBankRepo, ExamQuestionBankRepo>();
+builder.Services.AddScoped<IExamQuestionRepo, ExamQuestionRepo>();
+builder.Services.AddScoped<IStudentExamAnswerRepo, StudentExamAnswerRepo>();
 
 
 

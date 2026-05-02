@@ -1,4 +1,6 @@
-﻿namespace GenZCoders.DTOs.CourseRoundDto
+﻿using GenZCoders.DTOs.ExamsDto;
+
+namespace GenZCoders.DTOs.CourseRoundDto
 {
     public class CreateCourseRoundDto
     {
@@ -25,6 +27,8 @@
         public string? Question9 { get; set; }
         public string? Question10 { get; set; }
         public int? AutomatedWorkFlowJump { get; set; }
+
+        public List<CreateExamQuestionDto>? ExamQuestions { get; set; }
 
     }
 

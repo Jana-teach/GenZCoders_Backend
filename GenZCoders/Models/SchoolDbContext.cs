@@ -739,20 +739,7 @@ public partial class SchoolDbContext : DbContext
             entity.ToTable("Status");
         });
 
-        modelBuilder.Entity<StudentExamAnswer>(entity =>
-        {
-            entity.ToTable("StudentExamAnswer");
-
-            entity.HasIndex(e => new { e.AccountId, e.ExamId }, "UQ_StudentExamAnswer_AccountExam").IsUnique();
-
-            entity.HasOne(d => d.Account).WithMany(p => p.StudentExamAnswers)
-                .HasForeignKey(d => d.AccountId)
-                .HasConstraintName("FK_StudentExamAnswer_Account");
-
-            entity.HasOne(d => d.Exam).WithMany(p => p.StudentExamAnswers)
-                .HasForeignKey(d => d.ExamId)
-                .HasConstraintName("FK_StudentExamAnswer_ExamQuestion");
-        });
+    
 
         modelBuilder.Entity<StudentExamResult>(entity =>
         {
@@ -1248,25 +1235,53 @@ public partial class SchoolDbContext : DbContext
         // In OnModelCreating or a separate IEntityTypeConfiguration<ExamQuestionBank>
         modelBuilder.Entity<ExamQuestionBank>(entity =>
         {
+            entity.ToTable("Exam_QuestionBank");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("ID");
+            entity.Property(e => e.ExamId).HasColumnName("Exam_ID");
+            entity.Property(e => e.QuestionId).HasColumnName("Question_ID");
+            entity.Property(e => e.CourseRoundId).HasColumnName("CourseRound_ID");
+
+            entity.HasOne(e => e.CourseRound)
+                .WithMany(cr => cr.ExamQuestionBanks)
+                .HasForeignKey(e => e.CourseRoundId)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<ExamQuestion>(entity =>
+        {
+            entity.ToTable("ExamQuestion");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.QuestionTitle).IsRequired();
+            entity.Property(e => e.Choice1).IsRequired();
+            entity.Property(e => e.Choice2).IsRequired();
+            entity.Property(e => e.Choice3).IsRequired();
+            entity.Property(e => e.Choice4).IsRequired();
+            entity.Property(e => e.CorrectAnswer).IsRequired();
+        });
+
+        modelBuilder.Entity<StudentExamAnswer>(entity =>
+        {
+            entity.ToTable("StudentExamAnswer");
             entity.HasKey(e => e.Id);
 
-            entity.Property(e => e.Id)
-                .ValueGeneratedOnAdd();
+            entity.Property(e => e.AccountId).HasColumnName("AccountId");
+            entity.Property(e => e.ExamQuestionId).HasColumnName("ExamQuestionId");
+            entity.Property(e => e.ChoosedAnswer).IsRequired();
+            entity.Property(e => e.Score).IsRequired();
+            entity.Property(e => e.QuestionbankId).HasColumnName("QuestionbankId");
+            entity.Property(e => e.ExamDetailsId).HasColumnName("ExamDetailsID");
 
-            entity.Property(e => e.ExamId)
-                .HasColumnName("Exam_ID");
+            // Explicit FK prevents shadow 'AccountId1'
+            entity.HasOne(e => e.Account)
+                .WithMany()
+                .HasForeignKey(e => e.AccountId)       // 👈 key fix
+                .OnDelete(DeleteBehavior.NoAction);
 
-            entity.Property(e => e.QuestionId)
-                .HasColumnName("Question_ID");
-
-            entity.Property(e => e.CourseRoundId)
-                .HasColumnName("CourseRound_ID");
-
-            // Foreign key to CourseRound
-            entity.HasOne(e => e.CourseRound)
-                .WithMany(cr => cr.ExamQuestionBanks)  // You'll need to add this collection to CourseRound
-                .HasForeignKey(e => e.CourseRoundId)
-                .OnDelete(DeleteBehavior.SetNull);  // or Restrict/NoAction depending on your needs
+            entity.HasOne(e => e.ExamQuestion)
+                .WithMany(q => q.StudentExamAnswers)
+                .HasForeignKey(e => e.ExamQuestionId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
 
         OnModelCreatingPartial(modelBuilder);

@@ -20,6 +20,5 @@ public partial class ExamQuestion
     public string CorrectAnswer { get; set; } = null!;
 
     public long SectionId { get; set; }
-
     public virtual ICollection<StudentExamAnswer> StudentExamAnswers { get; set; } = new List<StudentExamAnswer>();
 }

@@ -1,3 +1,5 @@
+using GenZCoders.DTOs.ExamsDto;
+
 namespace GenZCoders.DTOs.CourseRoundDto
 {
     public class CourseRoundDetailsDto
@@ -29,5 +31,8 @@ namespace GenZCoders.DTOs.CourseRoundDto
 
         public List<CourseRoundGroupItemDto> Groups { get; set; } = new();
         public List<string> WeekTitles { get; set; } = new List<string>();
+
+        public List<ExamQuestionDto>? ExamQuestions { get; set; }
+
     }
 }

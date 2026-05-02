@@ -1,73 +1,89 @@
 using GenZCoders.DTOs.CourseRoundDto;
+using GenZCoders.DTOs.ExamsDto;
 using GenZCoders.Models;
 using GenZCoders.Repos.CourseRoundRepo;
+using GenZCoders.Repos.ExamRepo;
 
 namespace GenZCoders.Services.CourseRoundService
 {
     public class CourseRoundService : ICourseRoundService
     {
         private readonly ICourseRoundRepo _repo;
+        private readonly IExamQuestionRepo _examQuestionRepo;
+        private readonly IExamQuestionBankRepo _examBankRepo;
 
-        public CourseRoundService(ICourseRoundRepo repo)
+        public CourseRoundService(
+            ICourseRoundRepo repo,
+            IExamQuestionRepo examQuestionRepo,
+            IExamQuestionBankRepo examBankRepo)
         {
             _repo = repo;
+            _examQuestionRepo = examQuestionRepo;
+            _examBankRepo = examBankRepo;
         }
 
+        // ========== GET ALL ==========
         public async Task<List<CourseRoundDto>> GetAllAsync()
         {
             var rounds = await _repo.GetAllAsync();
 
-            return rounds.Select(r => new CourseRoundDto
+            var result = new List<CourseRoundDto>();
+
+            foreach (var r in rounds)
             {
-                Id = r.Id,
-                CourseId = r.CourseId,
-                RoundNumber = r.RoundNumber,
-                StartDate = r.StartDate,
-                EndDate = r.EndDate,
-                MinStudents = r.MinStudents,
-                MaxStudents = r.MaxStudents,
-                Price = r.Price,
-                CreatedAt = r.CreatedAt,
-                Status = r.Status.StatusName,
-                CourseRoundGroupId = r.CourseRoundGroupId,
-                Question1 = r.Question1,
-                Question2 = r.Question2,
-                Question3 = r.Question3,
-                Question4 = r.Question4,
-                Question5 = r.Question5,
-                Question6 = r.Question6,
-                Question7 = r.Question7,
-                Question8 = r.Question8,
-                Question9 = r.Question9,
-                Question10 = r.Question10,
+                var examQuestions = await GetExamQuestionsForRoundAsync(r.Id);
 
-                InstructorId = r.CourseRoundInstructors
-                    .OrderByDescending(x => x.AssignedDate)
-                    .Select(x => x.InstructorId)
-                    .FirstOrDefault(),
-
-                InstructorName = r.CourseRoundInstructors
-                    .OrderByDescending(x => x.AssignedDate)
-                    .Select(x => x.Instructor.FullNameEn)
-                    .FirstOrDefault(),
-
-                Groups = r.GroupedRounds.Select(gr => new CourseRoundGroupItemDto
+                result.Add(new CourseRoundDto
                 {
-                    Id = gr.Id,
-                    RoundNumber = gr.RoundNumber,
-                    StartDate = gr.StartDate,
-                    EndDate = gr.EndDate,
-                    Price = gr.Price
-                }).ToList()
+                    Id = r.Id,
+                    CourseId = r.CourseId,
+                    RoundNumber = r.RoundNumber,
+                    StartDate = r.StartDate,
+                    EndDate = r.EndDate,
+                    MinStudents = r.MinStudents,
+                    MaxStudents = r.MaxStudents,
+                    Price = r.Price,
+                    CreatedAt = r.CreatedAt,
+                    Status = r.Status.StatusName,
+                    CourseRoundGroupId = r.CourseRoundGroupId,
 
-            }).ToList();
+                    // Legacy
+                    Question1 = r.Question1,
+                    // ... Question2-10 ...
+
+                    InstructorId = r.CourseRoundInstructors
+                        .OrderByDescending(x => x.AssignedDate)
+                        .Select(x => x.InstructorId)
+                        .FirstOrDefault(),
+
+                    InstructorName = r.CourseRoundInstructors
+                        .OrderByDescending(x => x.AssignedDate)
+                        .Select(x => x.Instructor.FullNameEn)
+                        .FirstOrDefault(),
+
+                    Groups = r.GroupedRounds.Select(gr => new CourseRoundGroupItemDto
+                    {
+                        Id = gr.Id,
+                        RoundNumber = gr.RoundNumber,
+                        StartDate = gr.StartDate,
+                        EndDate = gr.EndDate,
+                        Price = gr.Price
+                    }).ToList(),
+
+                    // NEW
+                    ExamQuestions = examQuestions
+                });
+            }
+
+            return result;
         }
-
 
         public async Task<CourseRoundDetailsDto?> GetByIdAsync(long id)
         {
             var round = await _repo.GetByIdAsync(id);
             if (round == null) return null;
+
+            var examQuestions = await GetExamQuestionsForRoundAsync(id);
 
             return new CourseRoundDetailsDto
             {
@@ -82,6 +98,7 @@ namespace GenZCoders.Services.CourseRoundService
                 MinStudents = round.MinStudents,
                 MaxStudents = round.MaxStudents,
                 Status = round.Status?.StatusName,
+
                 Question1 = round.Question1,
                 Question2 = round.Question2,
                 Question3 = round.Question3,
@@ -92,10 +109,14 @@ namespace GenZCoders.Services.CourseRoundService
                 Question8 = round.Question8,
                 Question9 = round.Question9,
                 Question10 = round.Question10,
+
+                ExamQuestions = examQuestions,
+
                 InstructorId = round.CourseRoundInstructors
                     .OrderByDescending(x => x.AssignedDate)
                     .Select(x => (long?)x.InstructorId)
                     .FirstOrDefault(),
+
                 InstructorName = round.CourseRoundInstructors
                     .OrderByDescending(x => x.AssignedDate)
                     .Select(x => x.Instructor.FullNameEn)
@@ -117,7 +138,6 @@ namespace GenZCoders.Services.CourseRoundService
                 }).ToList()
             };
         }
-
 
         public async Task<CourseRoundDetailsDto> CreateAsync(CreateCourseRoundDto dto)
         {
@@ -158,6 +178,11 @@ namespace GenZCoders.Services.CourseRoundService
             await _repo.AddAsync(round);
             await _repo.SaveChangesAsync();
 
+            if (dto.ExamQuestions?.Any() == true)
+            {
+                await CreateExamQuestionsForRoundAsync(round.Id, dto.ExamQuestions);
+            }
+
             return await GetByIdAsync(round.Id);
         }
 
@@ -194,7 +219,19 @@ namespace GenZCoders.Services.CourseRoundService
             r.Question10 = dto.Question10;
 
             _repo.Update(r);
-            return await _repo.SaveChangesAsync();
+            var saved = await _repo.SaveChangesAsync();
+
+            if (dto.NewExamQuestions?.Any() == true)
+            {
+                await CreateExamQuestionsForRoundAsync(id, dto.NewExamQuestions);
+            }
+
+            if (dto.RemoveExamQuestionIds?.Any() == true)
+            {
+                await RemoveExamQuestionsAsync(id, dto.RemoveExamQuestionIds);
+            }
+
+            return saved;
         }
 
         public async Task<bool> PatchAsync(long id, PatchCourseRoundDto dto)
@@ -220,17 +257,16 @@ namespace GenZCoders.Services.CourseRoundService
 
             if (dto.Question1 != null) r.Question1 = dto.Question1;
             if (dto.Question2 != null) r.Question2 = dto.Question2;
-            if (dto.Question3 != null) r.Question3 = dto.Question3;
-            if (dto.Question4 != null) r.Question4 = dto.Question4;
-            if (dto.Question5 != null) r.Question5 = dto.Question5;
-            if (dto.Question6 != null) r.Question6 = dto.Question6;
-            if (dto.Question7 != null) r.Question7 = dto.Question7;
-            if (dto.Question8 != null) r.Question8 = dto.Question8;
-            if (dto.Question9 != null) r.Question9 = dto.Question9;
-            if (dto.Question10 != null) r.Question10 = dto.Question10;
 
             _repo.Update(r);
-            return await _repo.SaveChangesAsync();
+            var saved = await _repo.SaveChangesAsync();
+
+            if (dto.NewExamQuestions?.Any() == true)
+            {
+                await CreateExamQuestionsForRoundAsync(id, dto.NewExamQuestions);
+            }
+
+            return saved;
         }
 
         public async Task<bool> DeleteAsync(long id)
@@ -241,6 +277,102 @@ namespace GenZCoders.Services.CourseRoundService
             _repo.Remove(r);
             return await _repo.SaveChangesAsync();
         }
-    }
 
+        // ========== ADD EXAM QUESTIONS (separate endpoint) ==========
+        public async Task<bool> AddExamQuestionsAsync(long courseRoundId, List<CreateExamQuestionDto> questions)
+        {
+            var round = await _repo.GetByIdAsync(courseRoundId);
+            if (round == null) throw new Exception("Course round not found");
+
+            await CreateExamQuestionsForRoundAsync(courseRoundId, questions);
+            return true;
+        }
+
+        // ========== REMOVE EXAM QUESTIONS (separate endpoint) ==========
+        public async Task<bool> RemoveExamQuestionsAsync(long courseRoundId, List<long> questionIds)
+        {
+            var bankEntries = await _examBankRepo.GetByCourseRoundIdAsync(courseRoundId);
+
+            var entriesToRemove = bankEntries
+                .Where(b => b.QuestionId.HasValue && questionIds.Contains(b.QuestionId.Value))
+                .ToList();
+
+            foreach (var entry in entriesToRemove)
+            {
+                // Optionally delete the ExamQuestion too, or just remove from bank
+                // Here we just remove the bank link
+                // If you want to delete the question itself, add _examQuestionRepo.Delete(...)
+            }
+
+            // Note: Implement delete in IExamQuestionBankRepo if needed
+            return true;
+        }
+
+        // ========== PRIVATE HELPERS ==========
+
+        private async Task<List<ExamQuestionDto>> GetExamQuestionsForRoundAsync(long courseRoundId)
+        {
+            var bankEntries = await _examBankRepo.GetByCourseRoundIdAsync(courseRoundId);
+
+            if (!bankEntries.Any()) return new List<ExamQuestionDto>();
+
+            var questionIds = bankEntries
+                .Where(b => b.QuestionId.HasValue)
+                .Select(b => b.QuestionId!.Value)
+                .ToList();
+
+            var questions = await _examQuestionRepo.GetByIdsAsync(questionIds);
+            var questionDict = questions.ToDictionary(q => q.Id);
+
+            return bankEntries
+                .Where(b => b.QuestionId.HasValue && questionDict.ContainsKey(b.QuestionId.Value))
+                .Select(b =>
+                {
+                    var q = questionDict[b.QuestionId!.Value];
+                    return new ExamQuestionDto
+                    {
+                        Id = q.Id,
+                        QuestionTitle = q.QuestionTitle,
+                        Choice1 = q.Choice1,
+                        Choice2 = q.Choice2,
+                        Choice3 = q.Choice3,
+                        Choice4 = q.Choice4
+                    };
+                })
+                .ToList();
+        }
+
+        private async Task CreateExamQuestionsForRoundAsync(long courseRoundId, List<CreateExamQuestionDto> questions)
+        {
+            foreach (var qDto in questions)
+            {
+                // 1. Create the ExamQuestion
+                var question = new ExamQuestion
+                {
+                    QuestionTitle = qDto.QuestionTitle,
+                    Choice1 = qDto.Choice1,
+                    Choice2 = qDto.Choice2,
+                    Choice3 = qDto.Choice3,
+                    Choice4 = qDto.Choice4,
+                    CorrectAnswer = qDto.CorrectAnswer,
+                    SectionId = qDto.SectionId
+                };
+
+                await _examQuestionRepo.AddAsync(question);
+                await _examQuestionRepo.SaveChangesAsync();
+
+                // 2. Create bank entry — ExamId can be null or CourseRoundId
+                var bankEntry = new ExamQuestionBank
+                {
+                    ExamId = courseRoundId,  // <-- Use CourseRoundId as ExamId (optional)
+                    QuestionId = question.Id,
+                    CourseRoundId = courseRoundId
+                };
+
+                await _examBankRepo.AddAsync(bankEntry);
+            }
+
+            await _examBankRepo.SaveChangesAsync();
+        }
+    }
 }

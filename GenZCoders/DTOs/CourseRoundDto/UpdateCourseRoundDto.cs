@@ -1,4 +1,6 @@
-﻿namespace GenZCoders.DTOs.CourseRoundDto
+﻿using GenZCoders.DTOs.ExamsDto;
+
+namespace GenZCoders.DTOs.CourseRoundDto
 {
     public class UpdateCourseRoundDto
     {
@@ -26,6 +28,9 @@
         public string? Question8 { get; set; }
         public string? Question9 { get; set; }
         public string? Question10 { get; set; }
+
+        public List<CreateExamQuestionDto>? NewExamQuestions { get; set; }
+        public List<long>? RemoveExamQuestionIds { get; set; }
     }
 
 }

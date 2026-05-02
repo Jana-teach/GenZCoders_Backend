@@ -1,12 +1,14 @@
 using GenZCoders.DTOs.ApplicationDto;
+using GenZCoders.DTOs.ExamsDto;
 using GenZCoders.Services.ApplicationService;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace GenZCoders.Controllers
 {
     [ApiController]
-    [Route("api/applications")]
+    [Route("api/[controller]")]
+    //[Authorize]
     public class ApplicationController : ControllerBase
     {
         private readonly IApplicationService _service;
@@ -16,73 +18,97 @@ namespace GenZCoders.Controllers
             _service = service;
         }
 
-        /// <param name="accountId">Student's account ID (from auth). Optional if from JWT.</param>
+        [HttpGet("exam-questions/{courseRoundId:long}")]
+        [AllowAnonymous]
+        public async Task<ActionResult<List<ExamQuestionDto>>> GetExamQuestions(long courseRoundId)
+        {
+            var questions = await _service.GetExamQuestionsAsync(courseRoundId);
+
+            if (!questions.Any())
+                return NotFound(new { message = "No questions found for this course round" });
+
+            return Ok(questions);
+        }
+
         [HttpPost]
-        public async Task<IActionResult> Create(
-            [FromQuery] long? accountId,
-            [FromBody] CreateApplicationDto dto)
-        {
-            if (dto == null)
-                return BadRequest(new { message = "Request body is required." });
-            if (!accountId.HasValue || accountId.Value <= 0)
-                return BadRequest(new { message = "accountId is required and must be a positive number." });
-            var result = await _service.CreateAsync(accountId.Value, dto);
-            return Ok(result);
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] long? accountId)
-        {
-            var items = await _service.GetAllAsync();
-            if (accountId.HasValue)
-            {
-                items = items.Where(x => x.AccountId == accountId.Value).ToList();
-            }
-            return Ok(items);
-        }
-
-        [HttpGet("{id:long}")]
-        public async Task<IActionResult> GetById(long id)
-        {
-            var result = await _service.GetByIdAsync(id);
-            if (result == null) return NotFound();
-            return Ok(result);
-        }
-
-        [HttpPatch("{id:long}/status")]
-        public async Task<IActionResult> PatchStatus(
-            long id,
-            [FromBody] PatchApplicationStatusDto dto)
-        {
-            var updated = await _service.PatchStatusAsync(id, dto);
-            if (!updated) return NotFound();
-            return NoContent();
-        }
-
-        [HttpPatch("{id:long}/course-round")]
-        public async Task<IActionResult> PatchCourseRound(
-            long id,
-            [FromBody] PatchApplicationCourseRoundDto dto)
+        public async Task<ActionResult<ApplicationDto>> Create([FromBody] CreateApplicationDto dto)
         {
             try
             {
-                var updated = await _service.PatchCourseRoundAsync(id, dto);
-                if (!updated) return NotFound();
-                return NoContent();
+                //var accountId = GetCurrentAccountId();
+                var result = await _service.CreateAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
         }
 
-        [HttpDelete("{id:long}")]
-        public async Task<IActionResult> Delete(long id)
+        [HttpPost("{applicationId:long}/exam-answers")]
+        public async Task<ActionResult> SubmitExamAnswers(long applicationId, [FromBody] List<ExamAnswerItemDto> answers)
         {
-            var deleted = await _service.DeleteAsync(id);
-            if (!deleted) return NotFound();
-            return NoContent();
+            try
+            {
+                var accountId = GetCurrentAccountId();
+                var app = await _service.GetByIdAsync(applicationId);
+
+                if (app == null) return NotFound(new { message = "Application not found" });
+                if (app.AccountId != accountId) return Forbid();
+
+                var success = await _service.SubmitExamAnswersAsync(accountId, app.CourseRoundId, answers);
+
+                return success
+                    ? Ok(new { message = "Answers submitted successfully" })
+                    : BadRequest(new { message = "Failed to submit answers" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:long}")]
+        public async Task<ActionResult<ApplicationDto>> GetById(long id)
+        {
+            var result = await _service.GetByIdAsync(id);
+            return result == null ? NotFound() : Ok(result);
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<List<ApplicationDto>>> GetAll()
+        {
+            var results = await _service.GetAllAsync();
+            return Ok(results);
+        }
+
+        [HttpDelete("{id:long}")]
+        public async Task<ActionResult> Delete(long id)
+        {
+            var success = await _service.DeleteAsync(id);
+            return success ? NoContent() : NotFound();
+        }
+
+        [HttpPatch("{id:long}/status")]
+        public async Task<ActionResult> PatchStatus(long id, [FromBody] PatchApplicationStatusDto dto)
+        {
+            var success = await _service.PatchStatusAsync(id, dto);
+            return success ? NoContent() : NotFound();
+        }
+
+        [HttpPatch("{id:long}/course-round")]
+        public async Task<ActionResult> PatchCourseRound(long id, [FromBody] PatchApplicationCourseRoundDto dto)
+        {
+            var success = await _service.PatchCourseRoundAsync(id, dto);
+            return success ? NoContent() : NotFound();
+        }
+
+        private long GetCurrentAccountId()
+        {
+            var userIdClaim = User.FindFirst("AccountId")?.Value
+                ?? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            return long.Parse(userIdClaim!);
         }
     }
-
 }
