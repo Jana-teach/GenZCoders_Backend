@@ -217,8 +217,13 @@ namespace GenZCoders.Services.ApplicationService
 
             await _repo.SaveChangesAsync();
 
-            var dtoTasks = apps.Select(a => MapToDtoAsync(a));
-            var dtos = await Task.WhenAll(dtoTasks);
+            // Avoid parallel DB operations on the same scoped DbContext instance.
+            // Map each application sequentially to prevent "second operation started" errors.
+            var dtos = new List<ApplicationDto>(apps.Count);
+            foreach (var app in apps)
+            {
+                dtos.Add(await MapToDtoAsync(app));
+            }
 
             foreach (var dto in dtos)
             {
@@ -229,7 +234,7 @@ namespace GenZCoders.Services.ApplicationService
                 }
             }
 
-            return dtos.ToList();
+            return dtos;
         }
 
         public async Task<bool> DeleteAsync(long id)

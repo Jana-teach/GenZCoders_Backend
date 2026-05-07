@@ -1274,7 +1274,7 @@ public partial class SchoolDbContext : DbContext
 
             // Explicit FK prevents shadow 'AccountId1'
             entity.HasOne(e => e.Account)
-                .WithMany()
+                .WithMany(a => a.StudentExamAnswers)
                 .HasForeignKey(e => e.AccountId)       // 👈 key fix
                 .OnDelete(DeleteBehavior.NoAction);
 
