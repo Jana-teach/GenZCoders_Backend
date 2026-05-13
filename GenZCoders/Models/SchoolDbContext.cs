@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using GenZCoders.Models;
+using GenZCoders.Models.Configurations;
 using Microsoft.EntityFrameworkCore;
 
 namespace GenZCoders.Models;
@@ -144,6 +145,9 @@ public partial class SchoolDbContext : DbContext
 
     public virtual DbSet<Wheeler> Wheelers { get; set; }
     public virtual DbSet<CourseMaterial> CourseMaterials { get; set; }
+    public virtual DbSet<CourseRoundAssignment> CourseRoundAssignments { get; set; }
+
+    public virtual DbSet<CourseRoundAssignmentSubmission> CourseRoundAssignmentSubmissions { get; set; }
     public DbSet<Media> Media { get; set; }
 
 
@@ -1283,6 +1287,24 @@ public partial class SchoolDbContext : DbContext
                 .HasForeignKey(e => e.ExamQuestionId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
+        modelBuilder.Entity<CourseRoundAssignment>(entity =>
+        {
+            entity.ToTable("CourseRoundAssignments");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.CourseRoundId).HasColumnName("CourseRoundId");
+            //entity.Property(e => e.Cou).HasColumnName("AssignmentId");
+        });
+        modelBuilder.Entity<CourseRoundAssignmentSubmission>(entity =>
+        {
+            entity.ToTable("CourseRoundAssignmentSubmissions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("Id");
+            entity.Property(e => e.AssignmentId).HasColumnName("AssignmentId");
+            //entity.Property(e => e.SubmissionId).HasColumnName("SubmissionId");
+        });
+        // modelBuilder.ApplyConfiguration(new CourseRoundAssignmentConfiguration());
+        // modelBuilder.ApplyConfiguration(new CourseRoundAssignmentSubmissionConfiguration());
 
         OnModelCreatingPartial(modelBuilder);
     }

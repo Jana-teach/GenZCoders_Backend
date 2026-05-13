@@ -38,6 +38,8 @@ public partial class Account
     public virtual CapstoneSupervisorExtension? CapstoneSupervisorExtension { get; set; }
 
     public virtual ICollection<CourseRoundInstructor> CourseRoundInstructors { get; set; } = new List<CourseRoundInstructor>();
+    public virtual ICollection<CourseRoundAssignment> CourseRoundAssignments { get; set; } = new List<CourseRoundAssignment>();
+    public virtual ICollection<CourseRoundAssignmentSubmission> CourseRoundAssignmentSubmission { get; set; } = new List<CourseRoundAssignmentSubmission>();
 
     public virtual ICollection<Grade> Grades { get; set; } = new List<Grade>();
 
